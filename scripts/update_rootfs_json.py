@@ -71,6 +71,8 @@ def main():
 
     # Locate rootfs.json
     json_path = sys.argv[1] if len(sys.argv) > 1 else "rootfs.json"
+    if os.path.isdir(json_path):
+        json_path = os.path.join(json_path, "rootfs.json")
     if not os.path.exists(json_path):
         print(f"Error: rootfs.json not found at {json_path}")
         sys.exit(1)
