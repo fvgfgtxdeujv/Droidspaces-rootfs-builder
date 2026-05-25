@@ -115,6 +115,45 @@ ln -sf /etc/init.d/sshd /etc/runlevels/default/sshd
 ln -sf /etc/init.d/containerd /etc/runlevels/default/containerd
 ln -sf /etc/init.d/docker /etc/runlevels/default/docker
 
+# Replace dhcpcd init script to only start in NAT network mode
+# This is the OpenRC equivalent of systemd's ExecCondition - if the container
+# is running in host network mode, dhcpcd is cleanly skipped at boot to prevent
+# cellular network breakage and kernel panics on Android interfaces.
+cat > /etc/init.d/dhcpcd << 'INITEOF'
+#!/sbin/openrc-run
+
+description="DHCP Client Daemon"
+
+command="/sbin/dhcpcd"
+command_args="-q -B ${command_args:-}"
+command_background="true"
+pidfile="/run/dhcpcd/pid"
+
+depend() {
+	provide net
+	need localmount
+	use logger network
+	after bootmisc modules
+	before dns
+}
+
+start_pre() {
+	# Only start in NAT mode - prevents cellular network breakage in host network mode
+	if ! grep -q 'net_mode=nat' /run/droidspaces/container.config 2>/dev/null; then
+		einfo "Skipping dhcpcd: not in NAT network mode"
+		return 1
+	fi
+	checkpath -d /run/dhcpcd
+}
+INITEOF
+chmod +x /etc/init.d/dhcpcd
+
+# Additionally whitelist only container veth interfaces (eth*) in dhcpcd.conf
+# as defense-in-depth against Android-internal interfaces (rmnet*, dit*, epdg*, etc.)
+if [ -f /etc/dhcpcd.conf ]; then
+    echo "allowinterfaces eth*" >> /etc/dhcpcd.conf
+fi
+
 # Mark fixes as completed
 echo "Post-extraction fixes applied on $(date)" > /etc/droidspaces
 EOF_RUN
