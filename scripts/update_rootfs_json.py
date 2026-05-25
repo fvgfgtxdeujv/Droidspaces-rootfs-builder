@@ -109,6 +109,10 @@ def main():
         entry["version"] = version
         entry["build_date"] = date_str
 
+        # Preserve existing author; set default if missing
+        if "author" not in entry:
+            entry["author"] = "Droidspaces developers"
+
         # GitHub API provides sha256 in the 'digest' field
         digest = asset.get("digest", "")
         if digest.startswith("sha256:"):
