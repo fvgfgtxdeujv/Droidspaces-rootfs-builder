@@ -112,9 +112,6 @@ RUN apt-get update && \
     pulseaudio \
     pulseaudio-utils \
     pavucontrol \
-    # VirGL guest drivers (for virglrenderer_android)
-    libgl1-mesa-dri \
-    mesa-vulkan-drivers \
     # XFCE Desktop Environment and essential tools
     xfce4 \
     desktop-base \
@@ -398,6 +395,10 @@ RUN apt-get purge -y qemu-* binfmt-support || true && \
     dpkg --add-architecture amd64 && \
     apt-get update && \
     apt-get install -y libc6:amd64
+
+# Install custom mesa from lfdevs/mesa-for-android-container
+COPY scripts/install-mesa /usr/local/bin/install-mesa
+RUN chmod +x /usr/local/bin/install-mesa && install-mesa
 
 # Final cleanup of APT cache
 RUN apt-get clean && \
