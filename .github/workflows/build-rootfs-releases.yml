@@ -1,6 +1,9 @@
 name: Build and Release Droidspaces RootFS
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       update_json_only:
