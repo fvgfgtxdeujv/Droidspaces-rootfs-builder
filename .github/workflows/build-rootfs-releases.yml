@@ -13,6 +13,9 @@ on:
   schedule:
     - cron: '0 0 * * 0'
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   setup:
     if: ${{ github.event.inputs.update_json_only != 'true' }}
@@ -23,7 +26,7 @@ jobs:
       build_date: ${{ steps.prep.outputs.build_date }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: Find Build Templates
         id: find-templates
@@ -52,7 +55,7 @@ jobs:
         template: ${{ fromJson(needs.setup.outputs.templates) }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: Build RootFS (${{ matrix.template }})
         run: |
@@ -61,7 +64,7 @@ jobs:
           ./build_rootfs-native.sh -i "${{ matrix.template }}.Dockerfile" -v "${{ needs.setup.outputs.build_id }}"
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.template }}-rootfs
           path: "*.tar.xz"
@@ -97,7 +100,7 @@ jobs:
           cp "$TARBALL" "$FINAL"
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-rootfs
           path: "*.tar.xz"
@@ -111,10 +114,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v4
         with:
           pattern: "*-rootfs"
           merge-multiple: true
@@ -162,7 +165,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: Update rootfs.json Registry
         run: python3 scripts/update_rootfs_json.py .
