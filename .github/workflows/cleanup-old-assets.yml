@@ -13,7 +13,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0  # Fetch all history and tags so git for-each-ref works correctly
 
