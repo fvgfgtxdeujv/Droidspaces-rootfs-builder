@@ -21,7 +21,7 @@ jobs:
       build_date: ${{ steps.prep.outputs.build_date }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Find Build Templates
         id: find-templates
@@ -50,7 +50,7 @@ jobs:
         template: ${{ fromJson(needs.setup.outputs.templates) }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build RootFS (${{ matrix.template }})
         run: |
@@ -59,7 +59,7 @@ jobs:
           ./build_rootfs-native.sh -i "${{ matrix.template }}.Dockerfile" -v "${{ needs.setup.outputs.build_id }}"
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.template }}-rootfs
           path: "*.tar.xz"
@@ -95,7 +95,7 @@ jobs:
           cp "$TARBALL" "$FINAL"
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}-rootfs
           path: "*.tar.xz"
@@ -109,16 +109,16 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: "*-rootfs"
           merge-multiple: true
 
       - name: Create Unified Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.setup.outputs.build_id }}
           name: "Droidspaces RootFS ${{ needs.setup.outputs.build_id }}"
@@ -160,7 +160,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Update rootfs.json Registry
         run: python3 scripts/update_rootfs_json.py .

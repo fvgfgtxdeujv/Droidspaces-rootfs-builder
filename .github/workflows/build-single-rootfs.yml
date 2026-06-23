@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build RootFS (${{ inputs.template }})
         run: |
@@ -40,7 +40,7 @@ jobs:
           ./build_rootfs-native.sh -i "${{ inputs.template }}.Dockerfile" -v "manual-$(date +%Y%m%d-%H%M%S)"
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.template }}-rootfs
           path: "*.tar.xz"
