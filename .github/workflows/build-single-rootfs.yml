@@ -1,0 +1,47 @@
+name: Build Single RootFS
+
+on:
+  workflow_dispatch:
+    inputs:
+      template:
+        description: '请选择要构建的模板'
+        required: true
+        type: choice
+        default: 'Ubuntu-24.04-Minimal'
+        options:
+          - Alpine-Minimal
+          - Alpine-base
+          - Arch-Minimal-Kernel-5.10-and-up
+          - Arch-base-Kernel-5.10-and-up
+          - AzureLinux-3.0-Minimal
+          - Debian-13-Minimal
+          - Debian-13-XFCE
+          - Debian-13-base
+          - OpenWrt-24.10-Minimal
+          - Ubuntu-22.04-Minimal
+          - Ubuntu-22.04-base
+          - Ubuntu-24.04-Minimal
+          - Ubuntu-24.04-XFCE
+          - Ubuntu-24.04-base
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build RootFS (${{ inputs.template }})
+        run: |
+          chmod +x build_rootfs-native.sh
+          ./build_rootfs-native.sh -i "${{ inputs.template }}.Dockerfile" -v "manual-$(date +%Y%m%d-%H%M%S)"
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.template }}-rootfs
+          path: "*.tar.xz"
+          retention-days: 7
