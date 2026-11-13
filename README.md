@@ -46,6 +46,55 @@ Add a key to `archs.json` and create `templates/<arch>/`.
 Needs docker with buildx, jq, and xz. QEMU is registered automatically when the host
 cannot run the target platform natively.
 
+## Disabled templates (Artix OpenRC, aarch64)
+
+`Artix-Base-OpenRC`, `Artix-Minimal-OpenRC` and `Artix-bspwm-OpenRC` currently ship as
+`*.Dockerfile.disabled`. CI's matrix is built with
+`find templates -mindepth 2 -name '*.Dockerfile'`, so these three are skipped and do not
+block releases.
+
+**Why they are disabled:** the bootstrap stage downloads the 1.1 GB Armtix (ARM64 Artix)
+tarball from `https://armtix.artixlinux.org/images/armtix-openrc-20260921.tar.xz`. That host
+sits behind Cloudflare and returns **403 to GitHub Actions runner IP ranges** (both HEAD and
+ranged GET were tested from `ubuntu-24.04-arm`), so the tarball cannot be fetched from CI.
+The old `armtixlinux.org` domain no longer resolves at all — that was the original failure
+(`curl: (6) Could not resolve host`). Because the old bootstrap `RUN` ended in `|| true`, the
+download failure was masked and the build only died later with the misleading
+`exec: "/bin/sh": stat /bin/sh: no such file or directory`.
+
+Both problems are already fixed inside the disabled files: the URL points at
+`armtix.artixlinux.org` and the bootstrap step now uses `set -euxo pipefail` plus a
+`test -f bin/sh` sanity check, so a broken download fails immediately with the real error.
+
+**Building them locally** (a normal residential/CI-external IP is not blocked by Cloudflare):
+
+```sh
+# 1. fetch the Armtix tarball once (1.1 GB)
+curl -fLO https://armtix.artixlinux.org/images/armtix-openrc-20260921.tar.xz
+
+# 2. rename the template back so build.sh can see it
+mv templates/aarch64/Artix-Base-OpenRC.Dockerfile.disabled \
+   templates/aarch64/Artix-Base-OpenRC.Dockerfile
+
+# 3. build as usual
+./build.sh -a aarch64 -i Artix-Base-OpenRC
+```
+
+**How to re-enable in CI:** Cloudflare blocks the runner IPs, so renaming the files back is
+not enough. Pick one of these:
+
+1. **Vendor the tarball as a release asset** (recommended): create a release in this repo
+   with `armtix-openrc-20260921.tar.xz` attached, then point the `curl` in the bootstrap
+   stage at that asset URL. GitHub-hosted downloads are always reachable from runners.
+2. **Mirror the tarball to your own storage** (S3/R2/CDN without bot filtering) and use
+   that URL in all three Dockerfiles.
+3. **Build the three templates out-of-band** on a machine that can reach
+   `armtix.artixlinux.org`, then upload the resulting `*.tar.xz` to the release manually.
+
+After the change, rename the files back to `*.Dockerfile` and push — the matrix picks them
+up automatically. Keep `set -euxo pipefail` + `test -f bin/sh` so a future mirror change
+fails loudly at the download step instead of producing an empty rootfs.
+
 ## Checking labels
 
 ```sh
