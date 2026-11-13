@@ -1,16 +1,17 @@
 name: Build and Release Droidspaces RootFS
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       update_json_only:
         description: 'Only regenerate rootfs.json from the latest release (skip build & release)'
         type: boolean
         default: false
-  schedule:
-    - cron: '0 0 * * 0'
+  # [TEMP DISABLED while Artix fix is being verified — re-enable after green]
+  # push:
+  #   branches: [main]
+  # schedule:
+  #   - cron: '0 0 * * 0'
 
 concurrency:
   group: rootfs-release
