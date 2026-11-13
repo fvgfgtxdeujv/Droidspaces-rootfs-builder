@@ -29,9 +29,16 @@ jobs:
         run: |
           URL=$(grep -oE 'https://[^ ]+\.tar\.xz' "templates/aarch64/${{ matrix.name }}.Dockerfile" | head -1)
           echo "Source URL: $URL"
-          HEADERS=$(curl -fsSI --max-time 30 "$URL")
-          echo "$HEADERS"
-          echo "$HEADERS" | grep -qi '^HTTP/[0-9.]* 200' || { echo "::error::source returned non-200"; exit 1; }
+          UA="Mozilla/5.0 (X11; Linux x86_64) Droidspaces-CI/1.0"
+          # HEAD can be blocked by Cloudflare (403) for datacenter IPs; fall back
+          # to a small ranged GET, which mirrors what the real build does.
+          CODE=$(curl -sSI -A "$UA" --max-time 30 -o /dev/null -w '%{http_code}' "$URL" || true)
+          echo "HEAD probe: $CODE"
+          if [ "$CODE" != "200" ]; then
+            CODE=$(curl -sSL -A "$UA" --max-time 60 -r 0-1048575 -o /dev/null -w '%{http_code}' "$URL" || true)
+            echo "GET range probe: $CODE"
+          fi
+          case "$CODE" in 200|206) echo "Source reachable";; *) echo "::error::source unreachable (last code: $CODE)"; exit 1;; esac
 
       - name: Build rootfs
         run: ./build.sh -a "aarch64" -i "${{ matrix.name }}" -v "verify-$(date +'%Y%m%d-%H%M%S')"
