@@ -1,0 +1,44 @@
+name: Artix RootFS Verify
+
+# Standalone verification workflow: rebuilds only the three Artix (OpenRC)
+# templates that previously failed due to the dead armtixlinux.org mirror.
+# Does NOT create releases or touch rootfs.json. Trigger manually.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: artix-verify
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: aarch64/${{ matrix.name }}
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Artix-Base-OpenRC
+          - name: Artix-Minimal-OpenRC
+          - name: Artix-bspwm-OpenRC
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Armtix tarball source is reachable
+        run: |
+          URL=$(grep -oE 'https://[^ ]+\.tar\.xz' "templates/aarch64/${{ matrix.name }}.Dockerfile" | head -1)
+          echo "Source URL: $URL"
+          HEADERS=$(curl -fsSI --max-time 30 "$URL")
+          echo "$HEADERS"
+          echo "$HEADERS" | grep -qi '^HTTP/[0-9.]* 200' || { echo "::error::source returned non-200"; exit 1; }
+
+      - name: Build rootfs
+        run: ./build.sh -a "aarch64" -i "${{ matrix.name }}" -v "verify-$(date +'%Y%m%d-%H%M%S')"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verify-aarch64-${{ matrix.name }}
+          path: "*.tar.xz"
+          retention-days: 1
+          if-no-files-found: error

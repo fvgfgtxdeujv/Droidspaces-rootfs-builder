@@ -8,11 +8,16 @@
 FROM alpine:latest AS bootstrap
 RUN apk add --no-cache curl xz
 WORKDIR /rootfs
-RUN curl -fsSL https://armtixlinux.org/images/armtix-openrc-20260921.tar.xz | xz -d | tar x && \
-    ln -sf usr/bin bin && \
-    ln -sf usr/lib lib && \
-    ln -sf usr/lib64 lib64 2>/dev/null || true && \
-    ln -sf usr/sbin sbin
+# set -o pipefail makes the curl|xz|tar pipeline abort the build on download
+# failure instead of silently producing an empty /rootfs (the || true below is
+# scoped to the lib64 symlink only, never to the download).
+RUN set -euxo pipefail; \
+    curl -fsSL https://armtix.artixlinux.org/images/armtix-openrc-20260921.tar.xz | xz -d | tar x; \
+    ln -sf usr/bin bin; \
+    ln -sf usr/lib lib; \
+    (ln -sf usr/lib64 lib64 2>/dev/null || true); \
+    ln -sf usr/sbin sbin; \
+    test -f bin/sh
 
 FROM scratch AS base
 COPY --from=bootstrap /rootfs /
